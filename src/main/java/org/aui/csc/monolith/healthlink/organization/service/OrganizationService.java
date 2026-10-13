@@ -1,4 +1,4 @@
-package org.translator.healthlink.organization.service;
+package org.aui.csc.monolith.healthlink.organization.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -13,15 +13,15 @@ import org.springframework.web.server.ResponseStatusException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
-import org.translator.healthlink.organization.entity.Department;
-import org.translator.healthlink.organization.entity.Hospital;
-import org.translator.healthlink.organization.entity.Region;
-import org.translator.healthlink.organization.mapper.OrganizationMapper;
-import org.translator.healthlink.organization.repository.DepartmentRepository;
-import org.translator.healthlink.organization.repository.HospitalRepository;
-import org.translator.healthlink.organization.repository.RegionRepository;
+import org.aui.csc.monolith.healthlink.organization.entity.Department;
+import org.aui.csc.monolith.healthlink.organization.entity.Hospital;
+import org.aui.csc.monolith.healthlink.organization.entity.Region;
+import org.aui.csc.monolith.healthlink.organization.mapper.OrganizationMapper;
+import org.aui.csc.monolith.healthlink.organization.repository.DepartmentRepository;
+import org.aui.csc.monolith.healthlink.organization.repository.HospitalRepository;
+import org.aui.csc.monolith.healthlink.organization.repository.RegionRepository;
 
-import static org.translator.healthlink.organization.dto.OrganizationDtos.*;
+import static org.aui.csc.monolith.healthlink.organization.dto.OrganizationDtos.*;
 
 @Service
 @Validated

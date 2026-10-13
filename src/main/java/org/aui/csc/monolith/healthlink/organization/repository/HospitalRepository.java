@@ -1,9 +1,9 @@
-package org.translator.healthlink.organization.repository;
+package org.aui.csc.monolith.healthlink.organization.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.translator.healthlink.organization.entity.Hospital;
+import org.aui.csc.monolith.healthlink.organization.entity.Hospital;
 
 public interface HospitalRepository extends JpaRepository<Hospital, Long> {
 

@@ -1,4 +1,4 @@
-package org.translator.healthlink;
+package org.aui.csc.monolith.healthlink;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

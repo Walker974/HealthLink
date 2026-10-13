@@ -1,4 +1,4 @@
-package org.translator.healthlink.organization.controller;
+package org.aui.csc.monolith.healthlink.organization.controller;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;

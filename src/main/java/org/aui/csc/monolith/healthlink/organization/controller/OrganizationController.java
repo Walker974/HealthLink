@@ -1,4 +1,4 @@
-package org.translator.healthlink.organization.controller;
+package org.aui.csc.monolith.healthlink.organization.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -8,9 +8,9 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 
-import org.translator.healthlink.organization.service.OrganizationService;
+import org.aui.csc.monolith.healthlink.organization.service.OrganizationService;
 
-import static org.translator.healthlink.organization.dto.OrganizationDtos.*;
+import static org.aui.csc.monolith.healthlink.organization.dto.OrganizationDtos.*;
 
 @RestController
 @RequestMapping("/api/organization")

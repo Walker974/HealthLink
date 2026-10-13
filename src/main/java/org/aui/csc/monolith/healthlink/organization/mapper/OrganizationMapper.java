@@ -1,14 +1,14 @@
-package org.translator.healthlink.organization.mapper;
+package org.aui.csc.monolith.healthlink.organization.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.ReportingPolicy;
-import org.translator.healthlink.organization.entity.Department;
-import org.translator.healthlink.organization.entity.Hospital;
-import org.translator.healthlink.organization.entity.Region;
+import org.aui.csc.monolith.healthlink.organization.entity.Department;
+import org.aui.csc.monolith.healthlink.organization.entity.Hospital;
+import org.aui.csc.monolith.healthlink.organization.entity.Region;
 
-import static org.translator.healthlink.organization.dto.OrganizationDtos.*;
+import static org.aui.csc.monolith.healthlink.organization.dto.OrganizationDtos.*;
 
 @Mapper(
         componentModel = MappingConstants.ComponentModel.SPRING,

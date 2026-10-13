@@ -1,4 +1,4 @@
-package org.translator.healthlink;
+package org.aui.csc.monolith.healthlink;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

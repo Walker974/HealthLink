@@ -1,4 +1,4 @@
-package org.translator.healthlink.organization.entity;
+package org.aui.csc.monolith.healthlink.organization.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;

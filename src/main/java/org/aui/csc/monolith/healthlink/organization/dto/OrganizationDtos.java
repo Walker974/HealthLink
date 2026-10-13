@@ -1,4 +1,4 @@
-package org.translator.healthlink.organization.dto;
+package org.aui.csc.monolith.healthlink.organization.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
