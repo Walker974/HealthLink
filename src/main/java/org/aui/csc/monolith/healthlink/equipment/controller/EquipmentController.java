@@ -5,6 +5,7 @@ import java.util.List;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import lombok.RequiredArgsConstructor;
 import org.aui.csc.monolith.healthlink.equipment.dto.EquipmentDtos.ChangeStatusRequest;
 import org.aui.csc.monolith.healthlink.equipment.dto.EquipmentDtos.EquipmentResponse;
 import org.aui.csc.monolith.healthlink.equipment.dto.EquipmentDtos.RegisterEquipmentRequest;
@@ -21,26 +22,17 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
  *
  * @RestController: answers HTTP requests with JSON.
  * @RequestMapping: every URL in this class starts with /api/equipment.
+ * @RequiredArgsConstructor: generates a constructor with the final service field.
  * @Validated: also checks rules on simple parameters (@RequestParam).
  */
 @RestController
 @RequestMapping("/api/equipment")
+@RequiredArgsConstructor
 @Validated
 public class EquipmentController {
 
-    // The business service this web service delegates to.
     private final EquipmentService service;
 
-    // Constructor injection: Spring passes the EquipmentService bean here.
-    public EquipmentController(EquipmentService service) {
-        this.service = service;
-    }
-
-    /**
-     * POST /api/equipment          -> register a new machine (CREATE)
-     * Body: {"serialNumber": "...", "model": "...", "departmentId": 3, "imagingTypeCode": "MRI"}
-     * Reply: 201 Created + Location header pointing to the new resource.
-     */
     @PostMapping
     public ResponseEntity<EquipmentResponse> register(
             @Valid @RequestBody RegisterEquipmentRequest request) {
@@ -52,11 +44,6 @@ public class EquipmentController {
         return ResponseEntity.created(location).body(created);
     }
 
-    /**
-     * PATCH /api/equipment/{id}/status   -> change ONE field (partial update)
-     * PATCH, not PUT: we do not replace the whole machine, only its status.
-     * Body: {"status": "OUT_OF_SERVICE"}
-     */
     @PatchMapping("/{id}/status")
     public EquipmentResponse changeStatus(
             @PathVariable Long id,
@@ -64,10 +51,6 @@ public class EquipmentController {
         return service.changeStatus(id, request.status());
     }
 
-    /**
-     * GET /api/equipment/available?type=MRI&city=Fes   -> the citizen's search (READ)
-     * @RequestParam reads values from the URL after the "?".
-     */
     @GetMapping("/available")
     public List<EquipmentResponse> findAvailable(
             @RequestParam("type") @NotBlank String type,

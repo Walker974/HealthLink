@@ -24,21 +24,16 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
  *         Region, Hospital, Department, StaffMember, ...
  */
 @MappedSuperclass
-// "Before every INSERT/UPDATE, let Spring's auditing listener fill the audit fields."
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 public abstract class BaseEntity extends AbstractAuditable<StaffMember, Long> {
 
     // The id is inherited from Spring Data (AbstractPersistable): written once, for all (DRY).
 
-    // Soft delete flag: we never DELETE rows, we set active = false
-    // so the history (equipment, status changes) is never lost.
-    // @ColumnDefault("true"): existing rows get "true" when Hibernate adds the column.
     @Column(nullable = false)
     @ColumnDefault("true")
     private boolean active = true;
 
-    // No setters: state changes only through these explicit methods.
     public void deactivate() {
         this.active = false;
     }

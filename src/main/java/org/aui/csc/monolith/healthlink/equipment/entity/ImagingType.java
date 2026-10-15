@@ -23,7 +23,6 @@ public class ImagingType extends BaseEntity {   // inherits id, active, audit fi
     @Column(nullable = false, unique = true, length = 30)
     private String code;
 
-    // Human-readable name, e.g. "Magnetic Resonance Imaging".
     @Column(nullable = false, length = 120)
     private String name;
 

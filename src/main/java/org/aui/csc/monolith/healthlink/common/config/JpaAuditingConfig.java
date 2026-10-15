@@ -18,16 +18,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @Configuration
 @EnableJpaAuditing(auditorAwareRef = "auditorProvider")
 public class JpaAuditingConfig {
-
-    /**
-     * @Bean: Spring calls this method ONCE at startup and stores the returned
-     * object in the container. We never call it ourselves (Inversion of Control):
-     * the auditing listener asks this bean for the current user on every save.
-     *
-     * For now there is no login, so we return "nobody" (Optional.empty()):
-     * only the dates are filled. When Keycloak is added, ONLY this method
-     * changes: read the email from the JWT, then look up the StaffMember.
-     */
     @Bean
     public AuditorAware<StaffMember> auditorProvider() {
         return () -> Optional.empty();
