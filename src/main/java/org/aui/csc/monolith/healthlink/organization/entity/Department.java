@@ -1,6 +1,7 @@
 package org.aui.csc.monolith.healthlink.organization.entity;
 
 import jakarta.persistence.*;
+import org.aui.csc.monolith.healthlink.common.entity.BaseEntity;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,11 +16,7 @@ import lombok.NoArgsConstructor;
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Department {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Department extends BaseEntity {
 
     @Column(nullable = false, length = 30)
     private String code;
