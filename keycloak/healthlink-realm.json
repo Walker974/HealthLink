@@ -1,0 +1,86 @@
+{
+  "realm": "healthlink",
+  "enabled": true,
+  "displayName": "HealthLink",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "sslRequired": "none",
+  "accessTokenLifespan": 300,
+  "roles": {
+    "realm": [
+      { "name": "RADIOLOGY_OPERATOR" },
+      { "name": "MAINTENANCE_TECHNICIAN" },
+      { "name": "HOSPITAL_MANAGER" },
+      { "name": "MINISTRY_OFFICER" },
+      { "name": "PLATFORM_ADMIN" }
+    ]
+  },
+  "clientScopes": [
+    {
+      "name": "healthlink-api",
+      "protocol": "openid-connect",
+      "attributes": { "include.in.token.scope": "true" },
+      "protocolMappers": [
+        {
+          "name": "healthlink-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "healthlink-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "healthlink-realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "multivalued": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "healthlink-web",
+      "name": "HealthLink PWA",
+      "protocol": "openid-connect",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true,
+      "redirectUris": ["http://localhost:5173/*"],
+      "webOrigins": ["http://localhost:5173"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5173/*"
+      },
+      "defaultClientScopes": ["healthlink-api", "profile", "email"]
+    },
+    {
+      "clientId": "healthlink-cli",
+      "name": "HealthLink local API testing",
+      "protocol": "openid-connect",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true,
+      "attributes": { "oauth2.device.authorization.grant.enabled": "true" },
+      "defaultClientScopes": ["healthlink-api", "profile", "email"]
+    }
+  ]
+}
