@@ -203,6 +203,10 @@ Exact dependency versions and deployed services are defined by the repository's 
 
 ## Getting started
 
+### API documentation
+
+Swagger UI is available at [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html), with the generated [OpenAPI JSON](http://localhost:8080/v3/api-docs) and [YAML](http://localhost:8080/v3/api-docs.yaml). The [OpenAPI guide](docs/openapi.md) explains how to explore endpoints and authorize requests with a Keycloak access token.
+
 ### Prerequisites
 
 - Git.
