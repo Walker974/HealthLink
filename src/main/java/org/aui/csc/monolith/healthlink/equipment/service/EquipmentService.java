@@ -71,9 +71,6 @@ public class EquipmentService {
         return toResponse(equipmentRepository.saveAndFlush(equipment));
     }
 
-    /**
-     * Operators report faults. Repair and restoration require the future work-order workflow.
-     */
     @Transactional
     @PreAuthorize("hasRole('RADIOLOGY_OPERATOR')")
     public EquipmentResponse changeStatus(Long equipmentId, EquipmentStatus newStatus) {
