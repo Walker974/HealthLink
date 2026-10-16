@@ -1,11 +1,13 @@
 package org.aui.csc.monolith.healthlink.organization.service;
 
 import lombok.RequiredArgsConstructor;
+import org.aui.csc.monolith.healthlink.common.security.StaffAccess;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.server.ResponseStatusException;
@@ -33,8 +35,10 @@ public class OrganizationService {
     private final HospitalRepository hospitalRepository;
     private final DepartmentRepository departmentRepository;
     private final OrganizationMapper mapper;
+    private final StaffAccess staffAccess;
 
     @Transactional
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
     public RegionResponse createRegion(
             @NotNull @Valid CreateRegionRequest request
     ) {
@@ -48,6 +52,7 @@ public class OrganizationService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
     public HospitalResponse createHospital(
             @NotNull @Valid CreateHospitalRequest request
     ) {
@@ -67,9 +72,11 @@ public class OrganizationService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('HOSPITAL_MANAGER')")
     public DepartmentResponse createDepartment(
             @NotNull @Valid CreateDepartmentRequest request
     ) {
+        staffAccess.requireHospitalManager(request.hospitalId());
         Hospital hospital = hospitalRepository
                 .findById(request.hospitalId())
                 .orElseThrow(() -> notFound("Hospital"));
@@ -98,9 +105,11 @@ public class OrganizationService {
         return mapper.toResponse(hospital);
     }
 
+    @PreAuthorize("hasAnyRole('HOSPITAL_MANAGER', 'RADIOLOGY_OPERATOR', 'MAINTENANCE_TECHNICIAN')")
     public DepartmentResponse getDepartment(Long departmentId) {
         Department department = departmentRepository.findById(departmentId)
                 .orElseThrow(() -> notFound("Department"));
+        staffAccess.requireHospitalStaff(department.getHospital().getId());
 
         return mapper.toResponse(department);
     }
@@ -131,11 +140,13 @@ public class OrganizationService {
         return toPageResponse(result);
     }
 
+    @PreAuthorize("hasAnyRole('HOSPITAL_MANAGER', 'RADIOLOGY_OPERATOR', 'MAINTENANCE_TECHNICIAN')")
     public PageResponse<DepartmentResponse> listDepartments(
             Long hospitalId,
             int page,
             int size
     ) {
+        staffAccess.requireHospitalStaff(hospitalId);
         PageRequest pageable = pageRequest(page, size);
 
         if (!hospitalRepository.existsById(hospitalId)) {
