@@ -8,6 +8,7 @@ import org.aui.csc.monolith.healthlink.organization.repository.DepartmentReposit
 import org.aui.csc.monolith.healthlink.organization.repository.HospitalRepository;
 import org.aui.csc.monolith.healthlink.staff.entity.StaffMember;
 import org.aui.csc.monolith.healthlink.staff.entity.StaffRole;
+import org.aui.csc.monolith.healthlink.staff.mapper.StaffMapper;
 import org.aui.csc.monolith.healthlink.staff.repository.StaffMemberRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +26,7 @@ public class StaffService {
     private final HospitalRepository hospitals;
     private final DepartmentRepository departments;
     private final StaffAccess staffAccess;
+    private final StaffMapper mapper;
 
     @Transactional
     @PreAuthorize("hasRole('PLATFORM_ADMIN')")
@@ -46,18 +48,12 @@ public class StaffService {
         }
         StaffMember staff = new StaffMember(request.keycloakSubject().strip(), request.fullName().strip(),
                 request.email().strip(), request.role(), hospital, department);
-        return toResponse(repository.saveAndFlush(staff));
+        return mapper.toResponse(repository.saveAndFlush(staff));
     }
 
     @PreAuthorize("isAuthenticated()")
     public StaffResponse me() {
-        return toResponse(staffAccess.currentStaff());
-    }
-
-    private StaffResponse toResponse(StaffMember staff) {
-        return new StaffResponse(staff.getId(), staff.getKeycloakSubject(), staff.getFullName(), staff.getEmail(),
-                staff.getRole(), staff.getHospital() == null ? null : staff.getHospital().getId(),
-                staff.getDepartment() == null ? null : staff.getDepartment().getId());
+        return mapper.toResponse(staffAccess.currentStaff());
     }
 
     private ResponseStatusException notFound(String name) {
