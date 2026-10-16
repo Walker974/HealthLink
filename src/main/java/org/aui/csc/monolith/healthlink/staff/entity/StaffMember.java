@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.aui.csc.monolith.healthlink.common.entity.BaseEntity;
 import org.aui.csc.monolith.healthlink.organization.entity.Hospital;
+import org.aui.csc.monolith.healthlink.organization.entity.Department;
 
 /**
  * A member of staff who can log in and change data.
@@ -19,6 +20,10 @@ import org.aui.csc.monolith.healthlink.organization.entity.Hospital;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class StaffMember extends BaseEntity {   // inherits id + active
+
+    // Nullable only to preserve legacy rows. Unlinked accounts cannot access staff operations.
+    @Column(unique = true, length = 255)
+    private String keycloakSubject;
 
     @Column(nullable = false, length = 120)
     private String fullName;
@@ -41,10 +46,21 @@ public class StaffMember extends BaseEntity {   // inherits id + active
     @JoinColumn(name = "hospital_id")
     private Hospital hospital;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private Department department;
+
     public StaffMember(String fullName, String email, StaffRole role, Hospital hospital) {
         this.fullName = fullName;
         this.email = email;
         this.role = role;
         this.hospital = hospital;
+    }
+
+    public StaffMember(String keycloakSubject, String fullName, String email,
+                       StaffRole role, Hospital hospital, Department department) {
+        this(fullName, email, role, hospital);
+        this.keycloakSubject = keycloakSubject;
+        this.department = department;
     }
 }
