@@ -8,6 +8,7 @@ import org.aui.csc.monolith.healthlink.equipment.dto.EquipmentDtos.RegisterEquip
 import org.aui.csc.monolith.healthlink.equipment.entity.Equipment;
 import org.aui.csc.monolith.healthlink.equipment.entity.EquipmentStatus;
 import org.aui.csc.monolith.healthlink.equipment.entity.ImagingType;
+import org.aui.csc.monolith.healthlink.equipment.mapper.EquipmentMapper;
 import org.aui.csc.monolith.healthlink.equipment.notification.StatusChangeNotifier;
 import org.aui.csc.monolith.healthlink.equipment.repository.EquipmentRepository;
 import org.aui.csc.monolith.healthlink.equipment.repository.ImagingTypeRepository;
@@ -37,16 +38,19 @@ public class EquipmentService {
     private final DepartmentRepository departmentRepository;
     private final StatusChangeNotifier notifier;   // an INTERFACE, not a concrete class
     private final StaffAccess staffAccess;
+    private final EquipmentMapper mapper;
     public EquipmentService(EquipmentRepository equipmentRepository,
                             ImagingTypeRepository imagingTypeRepository,
                             DepartmentRepository departmentRepository,
                             StatusChangeNotifier notifier,
-                            StaffAccess staffAccess) {
+                            StaffAccess staffAccess,
+                            EquipmentMapper mapper) {
         this.equipmentRepository = equipmentRepository;
         this.imagingTypeRepository = imagingTypeRepository;
         this.departmentRepository = departmentRepository;
         this.notifier = notifier;
         this.staffAccess = staffAccess;
+        this.mapper = mapper;
     }
 
     @Transactional
@@ -68,7 +72,7 @@ public class EquipmentService {
         );
         // saveAndFlush: send the INSERT now, so a duplicate serial number fails HERE
         // (and becomes a 409 in EquipmentExceptionHandler), not later at commit.
-        return toResponse(equipmentRepository.saveAndFlush(equipment));
+        return mapper.toResponse(equipmentRepository.saveAndFlush(equipment));
     }
 
     @Transactional
@@ -85,34 +89,22 @@ public class EquipmentService {
 
         EquipmentStatus previous = equipment.getStatus();
         if (previous == newStatus) {
-            return toResponse(equipment);
+            return mapper.toResponse(equipment);
         }
 
         equipment.changeStatus(newStatus);
 
         notifier.statusChanged(equipment, previous);
 
-        return toResponse(equipment);
+        return mapper.toResponse(equipment);
     }
 
     public List<EquipmentResponse> findAvailable(String imagingTypeCode, String city) {
         return equipmentRepository
                 .findByStatusAndTypeInCity(EquipmentStatus.AVAILABLE, imagingTypeCode, city)
                 .stream()
-                .map(this::toResponse)
+                .map(mapper::toResponse)
                 .toList();
-    }
-
-    private EquipmentResponse toResponse(Equipment e) {
-        return new EquipmentResponse(
-                e.getId(),
-                e.getSerialNumber(),
-                e.getModel(),
-                e.getStatus(),
-                e.getStatusUpdatedAt(),
-                e.getDepartment().getId(),
-                e.getImagingType().getCode()
-        );
     }
 
     private ResponseStatusException notFound(String resource) {
