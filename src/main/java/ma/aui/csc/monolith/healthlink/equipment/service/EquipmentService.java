@@ -5,11 +5,16 @@ import java.util.List;
 import ma.aui.csc.monolith.healthlink.common.security.StaffAccess;
 import ma.aui.csc.monolith.healthlink.equipment.data.EquipmentDtos.EquipmentResponse;
 import ma.aui.csc.monolith.healthlink.equipment.data.EquipmentDtos.RegisterEquipmentRequest;
+import ma.aui.csc.monolith.healthlink.equipment.data.EquipmentDtos.ChangeStatusRequest;
+import ma.aui.csc.monolith.healthlink.audit.data.entity.AuditAction;
+import ma.aui.csc.monolith.healthlink.audit.service.AuditService;
+import ma.aui.csc.monolith.healthlink.maintenance.data.WorkOrderDtos.ReportFaultRequest;
+import ma.aui.csc.monolith.healthlink.maintenance.service.WorkOrderService;
 import ma.aui.csc.monolith.healthlink.equipment.data.entity.Equipment;
 import ma.aui.csc.monolith.healthlink.equipment.data.entity.EquipmentStatus;
 import ma.aui.csc.monolith.healthlink.equipment.data.entity.ImagingType;
 import ma.aui.csc.monolith.healthlink.equipment.data.EquipmentMapper;
-import ma.aui.csc.monolith.healthlink.equipment.notification.StatusChangeNotifier;
+import ma.aui.csc.monolith.healthlink.equipment.notification.EquipmentEvents;
 import ma.aui.csc.monolith.healthlink.equipment.data.repository.EquipmentRepository;
 import ma.aui.csc.monolith.healthlink.equipment.data.repository.ImagingTypeRepository;
 import ma.aui.csc.monolith.healthlink.organization.data.entity.Department;
@@ -36,19 +41,25 @@ public class EquipmentService {
     private final EquipmentRepository equipmentRepository;
     private final ImagingTypeRepository imagingTypeRepository;
     private final DepartmentRepository departmentRepository;
-    private final StatusChangeNotifier notifier;   // an INTERFACE, not a concrete class
+    private final EquipmentEvents events;
+    private final AuditService audit;
+    private final WorkOrderService workOrders;
     private final StaffAccess staffAccess;
     private final EquipmentMapper mapper;
     public EquipmentService(EquipmentRepository equipmentRepository,
                             ImagingTypeRepository imagingTypeRepository,
                             DepartmentRepository departmentRepository,
-                            StatusChangeNotifier notifier,
+                            EquipmentEvents events,
+                            AuditService audit,
+                            WorkOrderService workOrders,
                             StaffAccess staffAccess,
                             EquipmentMapper mapper) {
         this.equipmentRepository = equipmentRepository;
         this.imagingTypeRepository = imagingTypeRepository;
         this.departmentRepository = departmentRepository;
-        this.notifier = notifier;
+        this.events = events;
+        this.audit = audit;
+        this.workOrders = workOrders;
         this.staffAccess = staffAccess;
         this.mapper = mapper;
     }
@@ -59,9 +70,10 @@ public class EquipmentService {
         Department department = departmentRepository.findById(request.departmentId())
                 .filter(Department::isActive)
                 .orElseThrow(() -> notFound("Department"));
-        staffAccess.requireHospitalManager(department.getHospital().getId());
+        var actor = staffAccess.requireHospitalManager(department.getHospital().getId());
 
         ImagingType type = imagingTypeRepository.findByCode(request.imagingTypeCode())
+                .filter(ImagingType::isActive)
                 .orElseThrow(() -> notFound("Imaging type"));
 
         Equipment equipment = new Equipment(
@@ -70,32 +82,29 @@ public class EquipmentService {
                 department,
                 type
         );
-        // saveAndFlush: send the INSERT now, so a duplicate serial number fails HERE
-        // (and becomes a 409 in EquipmentExceptionHandler), not later at commit.
-        return mapper.toResponse(equipmentRepository.saveAndFlush(equipment));
+        equipmentRepository.save(equipment);
+        audit.record(AuditAction.EQUIPMENT_REGISTERED, equipment, null, actor,
+                null, null, null, "Equipment registered");
+        equipmentRepository.flush();
+        events.statusChanged(equipment, null);
+        return mapper.toResponse(equipment);
     }
 
     @Transactional
     @PreAuthorize("hasRole('RADIOLOGY_OPERATOR')")
-    public EquipmentResponse changeStatus(Long equipmentId, EquipmentStatus newStatus) {
-        Equipment equipment = equipmentRepository.findById(equipmentId)
-                .filter(Equipment::isActive)
-                .orElseThrow(() -> notFound("Equipment"));
-        staffAccess.requireDepartmentOperator(equipment.getDepartment());
-        if (newStatus != EquipmentStatus.OUT_OF_SERVICE) {
+    public EquipmentResponse changeStatus(Long equipmentId, ChangeStatusRequest request) {
+        if (request.status() != EquipmentStatus.OUT_OF_SERVICE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Only fault reporting is supported here; repair and verification require a work order");
+                    "Use the work-order workflow for repair and verification");
         }
+        workOrders.reportFault(new ReportFaultRequest(equipmentId, request.version(), request.description()));
+        return mapper.toResponse(equipmentRepository.findById(equipmentId).orElseThrow(() -> notFound("Equipment")));
+    }
 
-        EquipmentStatus previous = equipment.getStatus();
-        if (previous == newStatus) {
-            return mapper.toResponse(equipment);
-        }
-
-        equipment.changeStatus(newStatus);
-
-        notifier.statusChanged(equipment, previous);
-
+    @PreAuthorize("hasAnyRole('HOSPITAL_MANAGER', 'RADIOLOGY_OPERATOR', 'MAINTENANCE_TECHNICIAN')")
+    public EquipmentResponse get(Long equipmentId) {
+        Equipment equipment = equipmentRepository.findById(equipmentId).orElseThrow(() -> notFound("Equipment"));
+        staffAccess.requireEquipmentAccess(equipment);
         return mapper.toResponse(equipment);
     }
 
