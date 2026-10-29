@@ -50,8 +50,7 @@ public class EquipmentController {
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Equipment registered",
-                    headers = @Header(name = "Location", description = "Identifier URL of the registered equipment; "
-                            + "a GET-by-ID endpoint is not implemented yet",
+                    headers = @Header(name = "Location", description = "URL of the registered equipment",
                             schema = @Schema(type = "string", format = "uri"))),
             @ApiResponse(responseCode = "400", ref = "#/components/responses/BadRequest"),
             @ApiResponse(responseCode = "401", ref = "#/components/responses/Unauthorized"),
@@ -70,22 +69,38 @@ public class EquipmentController {
     }
 
     @PatchMapping("/{id}/status")
-    @Operation(summary = "Report an equipment fault",
+    @Operation(summary = "Report a fault through the compatibility status endpoint", deprecated = true,
             description = "Requires RADIOLOGY_OPERATOR with an active staff assignment to the equipment's department "
-                    + "and hospital. Only OUT_OF_SERVICE is accepted. Reporting an existing fault is idempotent. "
-                    + "Repair completion and restoring availability require the future work-order verification workflow.",
+                    + "and hospital. Requires the current equipment version and a fault description. "
+                    + "Creates a work order atomically; duplicates and stale versions return 409. "
+                    + "Prefer POST /api/work-orders. Only OUT_OF_SERVICE is accepted.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Equipment is out of service"),
+            @ApiResponse(responseCode = "200", description = "Equipment is out of service and a work order was opened"),
             @ApiResponse(responseCode = "400", ref = "#/components/responses/BadRequest"),
             @ApiResponse(responseCode = "401", ref = "#/components/responses/Unauthorized"),
             @ApiResponse(responseCode = "403", ref = "#/components/responses/Forbidden"),
-            @ApiResponse(responseCode = "404", ref = "#/components/responses/NotFound")
+            @ApiResponse(responseCode = "404", ref = "#/components/responses/NotFound"),
+            @ApiResponse(responseCode = "409", ref = "#/components/responses/Conflict")
     })
     public EquipmentResponse changeStatus(
             @PathVariable Long id,
             @Valid @RequestBody ChangeStatusRequest request) {
-        return service.changeStatus(id, request.status());
+        return service.changeStatus(id, request);
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Get equipment details and its current version",
+            description = "Hospital staff in their own hospital; operators are restricted to their department.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Equipment details including optimistic-lock version"),
+            @ApiResponse(responseCode = "401", ref = "#/components/responses/Unauthorized"),
+            @ApiResponse(responseCode = "403", ref = "#/components/responses/Forbidden"),
+            @ApiResponse(responseCode = "404", ref = "#/components/responses/NotFound")
+    })
+    public EquipmentResponse get(@PathVariable Long id) {
+        return service.get(id);
     }
 
     @GetMapping("/available")
