@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import ma.aui.csc.monolith.healthlink.equipment.data.entity.EquipmentStatus;
 
@@ -28,14 +29,17 @@ public final class EquipmentDtos {
 
     public record ChangeStatusRequest(
             @Schema(description = "Only OUT_OF_SERVICE is accepted by the fault-reporting endpoint. "
-                    + "Other equipment states require the future repair verification workflow.",
+                    + "This compatibility endpoint creates a work order. Prefer POST /api/work-orders.",
                     example = "OUT_OF_SERVICE", allowableValues = {"OUT_OF_SERVICE"})
-            @NotNull EquipmentStatus status
+            @NotNull EquipmentStatus status,
+            @NotNull @PositiveOrZero @Schema(description = "Current equipment version", example = "0") Long version,
+            @NotBlank @Size(max = 2000) @Schema(example = "Scanner fails its startup self-test") String description
     ) {
     }
 
     public record EquipmentResponse(
             Long id,
+            Long version,
             String serialNumber,
             String model,
             EquipmentStatus status,
