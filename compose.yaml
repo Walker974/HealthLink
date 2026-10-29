@@ -72,6 +72,7 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       SERVER_PORT: "8080"
       SPRING_DOCKER_COMPOSE_ENABLED: "false"
+      FLYWAY_BASELINE_ON_MIGRATE: ${FLYWAY_BASELINE_ON_MIGRATE:-true}
       KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/healthlink
       KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/healthlink/protocol/openid-connect/certs
       KEYCLOAK_AUDIENCE: healthlink-api
