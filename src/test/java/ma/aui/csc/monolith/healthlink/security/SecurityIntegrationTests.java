@@ -176,7 +176,8 @@ class SecurityIntegrationTests {
         for (String newStatus : List.of("AVAILABLE", "UNDER_MAINTENANCE")) {
             mvc.perform(patch("/api/equipment/{id}/status", machine.getId())
                             .header("Authorization", token("operator", "RADIOLOGY_OPERATOR"))
-                            .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"" + newStatus + "\"}"))
+                            .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"" + newStatus
+                                    + "\",\"version\":" + machine.getVersion() + ",\"description\":\"Fault report\"}"))
                     .andExpect(status().isBadRequest());
         }
         reportFault(token("technician", "MAINTENANCE_TECHNICIAN"), 403);
@@ -280,7 +281,7 @@ class SecurityIntegrationTests {
     }
 
     private StaffMember assign(String subject, StaffRole role, Hospital assignedHospital, Department assignedDepartment) {
-        return staff.save(new StaffMember(subject, "Demo staff", subject + "@example.test", role,
+        return staff.saveAndFlush(new StaffMember(subject, "Demo staff", subject + "@example.test", role,
                 assignedHospital, assignedDepartment));
     }
 
@@ -292,7 +293,8 @@ class SecurityIntegrationTests {
 
     private void reportFault(String token, int expectedStatus) throws Exception {
         mvc.perform(patch("/api/equipment/{id}/status", machine.getId()).header("Authorization", token)
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"OUT_OF_SERVICE\"}"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"OUT_OF_SERVICE\",\"version\":"
+                                + machine.getVersion() + ",\"description\":\"Fault reported during startup test\"}"))
                 .andExpect(status().is(expectedStatus));
     }
 
