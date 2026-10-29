@@ -51,6 +51,14 @@ public class SecurityConfig {
                                 "/api/equipment").hasRole("HOSPITAL_MANAGER")
                         .requestMatchers(HttpMethod.PATCH, "/api/equipment/{id}/status")
                                 .hasRole("RADIOLOGY_OPERATOR")
+                        .requestMatchers(HttpMethod.POST, "/api/work-orders").hasRole("RADIOLOGY_OPERATOR")
+                        .requestMatchers(HttpMethod.POST, "/api/work-orders/{id}/accept", "/api/work-orders/{id}/complete")
+                                .hasRole("MAINTENANCE_TECHNICIAN")
+                        .requestMatchers(HttpMethod.POST, "/api/work-orders/{id}/verify", "/api/work-orders/{id}/reject")
+                                .hasRole("HOSPITAL_MANAGER")
+                        .requestMatchers(HttpMethod.GET, "/api/work-orders", "/api/work-orders/{id}",
+                                "/api/equipment/{id}", "/api/equipment/{id}/history")
+                                .hasAnyRole("HOSPITAL_MANAGER", "RADIOLOGY_OPERATOR", "MAINTENANCE_TECHNICIAN")
                         .requestMatchers(HttpMethod.GET, "/api/organization/departments/{id}",
                                 "/api/organization/hospitals/{id}/departments")
                                 .hasAnyRole("HOSPITAL_MANAGER", "RADIOLOGY_OPERATOR", "MAINTENANCE_TECHNICIAN")
