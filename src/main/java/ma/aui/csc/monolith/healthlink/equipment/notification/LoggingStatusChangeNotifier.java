@@ -1,8 +1,6 @@
 package ma.aui.csc.monolith.healthlink.equipment.notification;
 
 import lombok.extern.slf4j.Slf4j;
-import ma.aui.csc.monolith.healthlink.equipment.data.entity.Equipment;
-import ma.aui.csc.monolith.healthlink.equipment.data.entity.EquipmentStatus;
 import org.springframework.stereotype.Component;
 
 /**
@@ -19,9 +17,9 @@ import org.springframework.stereotype.Component;
 public class LoggingStatusChangeNotifier implements StatusChangeNotifier {
 
     @Override
-    public void statusChanged(Equipment equipment, EquipmentStatus previousStatus) {
+    public void statusChanged(EquipmentStatusChanged event) {
         // Privacy: only technical ids and statuses, no personal data in logs.
         log.info("Equipment {} status changed: {} -> {}",
-                equipment.getId(), previousStatus, equipment.getStatus());
+                event.equipmentId(), event.previousStatus(), event.status());
     }
 }
