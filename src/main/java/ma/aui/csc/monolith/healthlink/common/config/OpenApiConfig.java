@@ -38,6 +38,7 @@ public class OpenApiConfig {
                         .addResponses("NotFound", new ApiResponse()
                                 .description("A referenced resource does not exist or is inactive where required"))
                         .addResponses("Conflict", new ApiResponse()
-                                .description("A unique value already exists or a database constraint was violated")));
+                                .description("Stale/concurrent update, invalid workflow transition, duplicate open repair, "
+                                        + "or uniqueness/database constraint conflict")));
     }
 }
