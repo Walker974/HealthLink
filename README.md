@@ -129,9 +129,9 @@ For stronger delivery guarantees, a transactional outbox is a future hardening o
 
 ### Shared entity metadata
 
-Business entities inherit from `BaseEntity`, which supplies an identifier and an `active` flag. The report places this base class above Spring Data's `AbstractAuditable` to share creation and last-modification metadata. `AuditRecord` is a separate exception to the ordinary mutable-entity lifecycle.
+Business entities inherit from `BaseEntity`, which supplies an identifier, an `active` flag and an optimistic-lock `version`. It extends Spring Data's `AbstractAuditable` for creation and last-modification metadata. `AuditRecord` has a separate immutable mapping.
 
-**Proposed identifier convention:** Java `UUID` values stored in PostgreSQL `uuid` columns, consistently used in repository types, DTOs, URL parameters, and references. The UUID generation strategy must be explicit; UUID identifiers are not an authorization mechanism.
+**Current identifier convention:** Business entities use Java `Long` IDs and PostgreSQL sequences, preserving existing records and API identifiers. Audit entries use generated UUIDs. Identifiers are not an authorization mechanism.
 
 The `active` flag supports deactivation where business rules require it. Deactivation and deletion must not silently erase maintenance or audit history.
 
@@ -204,6 +204,8 @@ Exact dependency versions and deployed services are defined by the repository's 
 ## Getting started
 
 ### API documentation
+
+The backend includes the [maintenance workflow and audit history](docs/maintenance.md): versioned fault reports, assigned repairs, independent manager verification and transactional history. The guide covers the new endpoints and adoption of Flyway for an existing database.
 
 Swagger UI is available at [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html), with the generated [OpenAPI JSON](http://localhost:8080/v3/api-docs) and [YAML](http://localhost:8080/v3/api-docs.yaml). The [OpenAPI guide](docs/openapi.md) explains how to explore endpoints and authorize requests with a Keycloak access token.
 
@@ -285,9 +287,9 @@ Before treating these targets as achieved, define workload, percentile, dataset 
 
 Priority tests include cross-hospital access rejection, repairer self-verification rejection, invalid transitions, optimistic-lock conflicts, transactional audit persistence, SSE reconnection, cache invalidation, and restoration from backup.
 
-## Suggested code organization
+## Code organization
 
-Organize the backend by business module, with focused controllers, services, repositories, DTOs, and mappers inside each module. The following is a proposed responsibility split, not an assertion about the current filesystem layout:
+The backend uses `ma.aui.csc.monolith.healthlink`, organized by business module. Each implemented module has `controller`, `service` and `data` packages; DTOs and MapStruct mappers live in `data`, with `entity` and `repository` subpackages. Availability currently resides in the equipment module; a dedicated geographic-search module remains planned.
 
 | Module | Responsibilities |
 | --- | --- |
@@ -295,15 +297,15 @@ Organize the backend by business module, with focused controllers, services, rep
 | `equipment` | Equipment registration, imaging types, and operational state |
 | `maintenance` | Work orders, repair completion, and verification |
 | `staff` | Staff profiles and organizational assignments |
-| `availability` | Public geographic searches and availability projections |
+| `availability` (planned) | Public geographic searches and availability projections |
 | `audit` | Append-only business history |
-| `shared` | Base entity and narrowly shared infrastructure |
+| `common` | Base entity, security, configuration, pagination and shared errors |
 
 Keep service responsibilities cohesive; a single module may contain separate hospital, region, and department services. Avoid making a generic shared service responsible for every entity.
 
 ## Roadmap
 
-The following are delivery milestones; their completion must be tracked against the actual implementation.
+The current backend includes migrations, scoped organization/equipment registration, the repair workflow and audit history. Geographic search, the frontend, Redis/SSE and Ministry summaries remain later milestones.
 
 1. Establish the domain model, migrations, validation, and identifier convention.
 2. Implement organization and equipment management with scoped authorization.
