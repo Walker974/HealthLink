@@ -112,6 +112,21 @@ class OpenApiDocumentationTests {
     }
 
     @Test
+    void maintenanceAndAuditDocumentVersionsRolesAndConflictResponses() throws Exception {
+        mvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/work-orders'].post.security[0].bearerAuth").isArray())
+                .andExpect(jsonPath("$.paths['/api/work-orders'].post.responses['201']").exists())
+                .andExpect(jsonPath("$.paths['/api/work-orders/{id}/verify'].post.description", containsString("different from the repairer")))
+                .andExpect(jsonPath("$.paths['/api/equipment/{equipmentId}/history'].get.security[0].bearerAuth").isArray())
+                .andExpect(jsonPath("$.components.schemas.ReportFaultRequest.required",
+                        containsInAnyOrder("equipmentId", "equipmentVersion", "description")))
+                .andExpect(jsonPath("$.components.schemas.VersionRequest.required", contains("version")))
+                .andExpect(jsonPath("$.components.schemas.EquipmentResponse.properties.version").exists())
+                .andExpect(jsonPath("$.paths['/api/equipment/{id}/status'].patch.deprecated").value(true));
+    }
+
+    @Test
     void publicDocumentationDoesNotOpenProtectedApiOperations() throws Exception {
         mvc.perform(post("/api/organization/regions")
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
