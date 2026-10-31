@@ -1,0 +1,58 @@
+name: Verify HealthLink
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: healthlink_maintenance_test_ci
+          POSTGRES_USER: healthlink_test
+          POSTGRES_PASSWORD: disposable_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U healthlink_test -d healthlink_maintenance_test_ci"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      HEALTHLINK_POSTGRES_TEST_URL: jdbc:postgresql://localhost:5432/healthlink_maintenance_test_ci
+      HEALTHLINK_POSTGRES_TEST_USER: healthlink_test
+      HEALTHLINK_POSTGRES_TEST_PASSWORD: disposable_test_password
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+          cache-dependency-path: |
+            backend/build.gradle
+            backend/gradle/wrapper/gradle-wrapper.properties
+      - run: bash gradlew test bootJar --no-daemon
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run api:generate
+      - run: npm run test
+      - run: npm run build

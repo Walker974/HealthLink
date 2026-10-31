@@ -203,6 +203,10 @@ Exact dependency versions and deployed services are defined by the repository's 
 
 ## Getting started
 
+The repository now contains independent `backend/` and `frontend/` applications. The backend keeps its existing business modules; the frontend is a feature-based React + TypeScript PWA. See the [frontend and monorepo guide](docs/frontend.md) for the complete layout and supported screens.
+
+Run `docker compose up -d --build` from the repository root, then open [HealthLink](http://localhost:5173). The [design preview](http://localhost:5173/?preview=1) uses explicitly labelled sample data based on the supplied maquette.
+
 ### API documentation
 
 The backend includes the [maintenance workflow and audit history](docs/maintenance.md): versioned fault reports, assigned repairs, independent manager verification and transactional history. The guide covers the new endpoints and adoption of Flyway for an existing database.
@@ -214,7 +218,7 @@ Swagger UI is available at [http://localhost:8080/swagger-ui.html](http://localh
 - Git.
 - Docker Engine or Docker Desktop with Docker Compose support.
 - Java 17 for running the backend outside Docker.
-- The Node.js version required by the frontend's package configuration, when running it locally.
+- Node.js 22.12+ and npm for frontend development outside Docker.
 
 ### Clone the repository
 
@@ -248,7 +252,7 @@ docker compose ps
 docker compose logs --tail=100
 ```
 
-These commands start only the services present in that Compose configuration. If the frontend or identity provider is not included, start it using its own committed instructions. Use the configured ports to determine the application URL.
+Compose starts PostgreSQL, Keycloak, the backend and the React PWA. Open the application at http://localhost:5173, or use http://localhost:5173/?preview=1 to explore explicitly labelled sample screens.
 
 To stop the environment while retaining persistent volumes:
 
@@ -258,19 +262,19 @@ docker compose down
 
 ### Run the backend outside Docker
 
-If the backend includes a Gradle wrapper, run these from its directory after configuring its dependencies:
+Run the backend from the repository root after configuring its database environment variables:
 
 ```bash
-./gradlew bootRun
+bash backend/gradlew -p backend bootRun
 ```
 
 Windows PowerShell:
 
 ```powershell
-.\gradlew.bat bootRun
+.\backend\gradlew.bat -p backend bootRun
 ```
 
-Run the project's existing automated tests with `./gradlew test` or `.\gradlew.bat test`. Frontend commands must match the scripts and lockfile committed with the frontend. These instructions are a configuration-aware starting point; they have not been validated against a repository checkout for this README.
+Run backend checks with `.\backend\gradlew.bat -p backend test bootJar`. For frontend development, stop any frontend container occupying port 5173, run `npm --prefix frontend ci`, then `npm --prefix frontend run dev`. Frontend checks are `npm --prefix frontend run test` and `npm --prefix frontend run build`.
 
 ## Quality targets and verification
 
@@ -305,7 +309,7 @@ Keep service responsibilities cohesive; a single module may contain separate hos
 
 ## Roadmap
 
-The current backend includes migrations, scoped organization/equipment registration, the repair workflow and audit history. Geographic search, the frontend, Redis/SSE and Ministry summaries remain later milestones.
+The current backend includes migrations, scoped organization/equipment registration, the repair workflow and audit history. The React PWA foundation includes public search, role-specific workspaces, explicit design previews and saved public searches. Verified geographic data, Redis/SSE and live Ministry summaries remain later milestones.
 
 1. Establish the domain model, migrations, validation, and identifier convention.
 2. Implement organization and equipment management with scoped authorization.
