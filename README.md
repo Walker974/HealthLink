@@ -252,7 +252,7 @@ docker compose ps
 docker compose logs --tail=100
 ```
 
-Compose starts PostgreSQL, Keycloak, the backend and the React PWA. Open the application at http://localhost:5173, or use http://localhost:5173/?preview=1 to explore explicitly labelled sample screens.
+Compose starts PostgreSQL with PostGIS, Redis, Keycloak, two backend instances behind an Nginx gateway, and the React PWA. Open the application at http://localhost:5173, or use http://localhost:5173/?preview=1 to explore explicitly labelled sample screens.
 
 To stop the environment while retaining persistent volumes:
 
@@ -293,7 +293,7 @@ Priority tests include cross-hospital access rejection, repairer self-verificati
 
 ## Code organization
 
-The backend uses `ma.aui.csc.monolith.healthlink`, organized by business module. Each implemented module has `controller`, `service` and `data` packages; DTOs and MapStruct mappers live in `data`, with `entity` and `repository` subpackages. Availability currently resides in the equipment module; a dedicated geographic-search module remains planned.
+The backend uses `ma.aui.csc.monolith.healthlink`, organized by business module. Each implemented module has `controller`, `service` and `data` packages; DTOs and MapStruct mappers live in `data`, with `entity` and `repository` subpackages. The city search remains in the equipment module; geographic search and live updates live in the `availability` module.
 
 | Module | Responsibilities |
 | --- | --- |
@@ -301,7 +301,8 @@ The backend uses `ma.aui.csc.monolith.healthlink`, organized by business module.
 | `equipment` | Equipment registration, imaging types, and operational state |
 | `maintenance` | Work orders, repair completion, and verification |
 | `staff` | Staff profiles and organizational assignments |
-| `availability` (planned) | Public geographic searches and availability projections |
+| `availability` | Public PostGIS nearby search, Redis-backed cache and Server-Sent Events live updates |
+| `ministry` | Regional and national availability summaries |
 | `audit` | Append-only business history |
 | `common` | Base entity, security, configuration, pagination and shared errors |
 
@@ -309,14 +310,14 @@ Keep service responsibilities cohesive; a single module may contain separate hos
 
 ## Roadmap
 
-The current backend includes migrations, scoped organization/equipment registration, the repair workflow and audit history. The React PWA foundation includes public search, role-specific workspaces, explicit design previews and saved public searches. Verified geographic data, Redis/SSE and live Ministry summaries remain later milestones.
+The backend now covers the full functional scope: migrations, scoped organization/equipment registration, the repair workflow and audit history, staff inventory and repair queues, staff management, PostGIS nearby search, a Redis cache, Redis Pub/Sub + SSE live updates across instances, and Ministry summaries. See the [availability and live updates guide](docs/availability.md). The React PWA foundation includes public search, role-specific workspaces, explicit design previews and saved public searches; connecting it to the new endpoints is the next frontend milestone.
 
 1. Establish the domain model, migrations, validation, and identifier convention.
 2. Implement organization and equipment management with scoped authorization.
 3. Complete fault reporting, maintenance, independent verification, and audit history.
-4. Deliver PostGIS-based public searches and the React map.
-5. Add Redis cache invalidation and SSE updates across instances.
-6. Deliver Ministry summaries and offline-view behavior.
+4. ✅ Deliver PostGIS-based public searches (backend); connect the React map.
+5. ✅ Add Redis cache invalidation and SSE updates across instances.
+6. ✅ Deliver Ministry summaries (backend); offline-view behavior in the PWA.
 7. Validate security boundaries, performance targets, backup restoration, and failure recovery.
 8. Harden event delivery and production operations where required.
 

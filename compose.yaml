@@ -1,6 +1,35 @@
+# Backend settings shared by both application instances (a YAML anchor avoids repeating them).
+x-backend: &backend
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
+  environment: &backend-environment
+    DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+    DB_USERNAME: ${POSTGRES_USER}
+    DB_PASSWORD: ${POSTGRES_PASSWORD}
+    SERVER_PORT: "8080"
+    SPRING_DOCKER_COMPOSE_ENABLED: "false"
+    FLYWAY_BASELINE_ON_MIGRATE: ${FLYWAY_BASELINE_ON_MIGRATE:-true}
+    KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/healthlink
+    KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/healthlink/protocol/openid-connect/certs
+    KEYCLOAK_AUDIENCE: healthlink-api
+    CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+    HEALTHLINK_REDIS_ENABLED: "true"
+    REDIS_HOST: redis
+    REDIS_PORT: "6379"
+  depends_on:
+    postgres:
+      condition: service_healthy
+    keycloak:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
 services:
   postgres:
-    image: postgres:17-alpine
+    # PostgreSQL 17 with the PostGIS extension, used for nearby (geographic) searches.
+    # Multi-architecture build of the official docker-postgis image: runs natively on Apple Silicon and Intel.
+    image: imresamu/postgis:17-3.5-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
       POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
@@ -62,28 +91,43 @@ services:
       retries: 20
       start_period: 30s
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+  redis:
+    # Shared availability cache + Pub/Sub channel that carries live updates between instances.
+    image: redis:7-alpine
+    command: [redis-server, --save, "", --appendonly, "no"]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Two identical, stateless application instances behind the gateway (horizontal scaling).
+  backend-1:
+    <<: *backend
+    hostname: backend-1
     environment:
-      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
-      DB_USERNAME: ${POSTGRES_USER}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
-      SERVER_PORT: "8080"
-      SPRING_DOCKER_COMPOSE_ENABLED: "false"
-      FLYWAY_BASELINE_ON_MIGRATE: ${FLYWAY_BASELINE_ON_MIGRATE:-true}
-      KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/healthlink
-      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/healthlink/protocol/openid-connect/certs
-      KEYCLOAK_AUDIENCE: healthlink-api
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+      <<: *backend-environment
+      HOSTNAME: backend-1
+
+  backend-2:
+    <<: *backend
+    hostname: backend-2
+    environment:
+      <<: *backend-environment
+      HOSTNAME: backend-2
+
+  gateway:
+    # Nginx load balancer: spreads API requests across instances and keeps SSE streams open.
+    image: nginx:1.27-alpine
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:
-      postgres:
-        condition: service_healthy
-      keycloak:
-        condition: service_healthy
+      backend-1:
+        condition: service_started
+      backend-2:
+        condition: service_started
 
   frontend:
     build:
@@ -98,7 +142,7 @@ services:
     ports:
       - "127.0.0.1:5173:8080"
     depends_on:
-      backend:
+      gateway:
         condition: service_started
     healthcheck:
       test: [CMD, wget, -q, --spider, http://127.0.0.1:8080/]

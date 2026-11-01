@@ -17,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import ma.aui.csc.monolith.healthlink.equipment.data.EquipmentDtos.ChangeStatusRequest;
 import ma.aui.csc.monolith.healthlink.equipment.data.EquipmentDtos.EquipmentResponse;
 import ma.aui.csc.monolith.healthlink.equipment.data.EquipmentDtos.RegisterEquipmentRequest;
+import ma.aui.csc.monolith.healthlink.common.data.PageResponse;
+import ma.aui.csc.monolith.healthlink.equipment.data.entity.EquipmentStatus;
 import ma.aui.csc.monolith.healthlink.equipment.service.EquipmentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -101,6 +103,27 @@ public class EquipmentController {
     })
     public EquipmentResponse get(@PathVariable Long id) {
         return service.get(id);
+    }
+
+    @GetMapping
+    @Operation(summary = "List equipment in your hospital",
+            description = "Hospital staff. Managers and technicians see their own hospital; radiology operators "
+                    + "see only their own department. Optional filters: departmentId and status. "
+                    + "Page is zero-based; size must be 1–100.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "One page of equipment"),
+            @ApiResponse(responseCode = "400", ref = "#/components/responses/BadRequest"),
+            @ApiResponse(responseCode = "401", ref = "#/components/responses/Unauthorized"),
+            @ApiResponse(responseCode = "403", ref = "#/components/responses/Forbidden")
+    })
+    public PageResponse<EquipmentResponse> list(
+            @Parameter(description = "Defaults to your own hospital") @RequestParam(required = false) Long hospitalId,
+            @RequestParam(required = false) Long departmentId,
+            @RequestParam(required = false) EquipmentStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return service.list(hospitalId, departmentId, status, page, size);
     }
 
     @GetMapping("/available")

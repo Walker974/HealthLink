@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import ma.aui.csc.monolith.healthlink.common.data.PageResponse;
 import ma.aui.csc.monolith.healthlink.staff.service.StaffService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -39,6 +40,52 @@ public class StaffController {
     })
     public StaffResponse create(@Valid @RequestBody CreateStaffRequest request) {
         return service.create(request);
+    }
+
+    @GetMapping
+    @Operation(summary = "List staff profiles",
+            description = "PLATFORM_ADMIN sees all staff, optionally filtered by hospitalId. "
+                    + "HOSPITAL_MANAGER sees only their own hospital. Page is zero-based; size must be 1–100.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "One page of staff profiles"),
+            @ApiResponse(responseCode = "400", ref = "#/components/responses/BadRequest"),
+            @ApiResponse(responseCode = "401", ref = "#/components/responses/Unauthorized"),
+            @ApiResponse(responseCode = "403", ref = "#/components/responses/Forbidden")
+    })
+    public PageResponse<StaffResponse> list(@RequestParam(required = false) Long hospitalId,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return service.list(hospitalId, page, size);
+    }
+
+    @PostMapping("/{id}/deactivate")
+    @Operation(summary = "Deactivate a staff profile",
+            description = "Soft delete: history is kept. HOSPITAL_MANAGER may deactivate operators and technicians "
+                    + "of their own hospital; PLATFORM_ADMIN may deactivate anyone. You cannot deactivate yourself.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Profile deactivated"),
+            @ApiResponse(responseCode = "400", ref = "#/components/responses/BadRequest"),
+            @ApiResponse(responseCode = "401", ref = "#/components/responses/Unauthorized"),
+            @ApiResponse(responseCode = "403", ref = "#/components/responses/Forbidden"),
+            @ApiResponse(responseCode = "404", ref = "#/components/responses/NotFound")
+    })
+    public StaffResponse deactivate(@PathVariable Long id) {
+        return service.deactivate(id);
+    }
+
+    @PostMapping("/{id}/activate")
+    @Operation(summary = "Reactivate a staff profile", description = "Same permissions as deactivation.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Profile reactivated"),
+            @ApiResponse(responseCode = "400", ref = "#/components/responses/BadRequest"),
+            @ApiResponse(responseCode = "401", ref = "#/components/responses/Unauthorized"),
+            @ApiResponse(responseCode = "403", ref = "#/components/responses/Forbidden"),
+            @ApiResponse(responseCode = "404", ref = "#/components/responses/NotFound")
+    })
+    public StaffResponse activate(@PathVariable Long id) {
+        return service.activate(id);
     }
 
     @GetMapping("/me")

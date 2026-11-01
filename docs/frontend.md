@@ -85,7 +85,7 @@ Use Node.js 22.12+ and npm. If the frontend container already owns port 5173, st
 
 ```powershell
 docker compose stop frontend
-docker compose up -d --build backend
+docker compose up -d --build gateway
 npm --prefix frontend ci
 npm --prefix frontend run dev
 ```

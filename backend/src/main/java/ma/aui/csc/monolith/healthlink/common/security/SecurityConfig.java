@@ -38,13 +38,21 @@ public class SecurityConfig {
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.GET, "/swagger-ui.html", "/swagger-ui/**",
                                 "/v3/api-docs", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/equipment/available").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/equipment/available",
+                                "/api/availability/nearby", "/api/availability/stream",
+                                "/api/imaging-types").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/organization/regions",
                                 "/api/organization/regions/{id}",
                                 "/api/organization/regions/{id}/hospitals",
                                 "/api/organization/hospitals/{id}").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/organization/regions",
-                                "/api/organization/hospitals", "/api/staff").hasRole("PLATFORM_ADMIN")
+                                "/api/organization/hospitals", "/api/staff", "/api/imaging-types").hasRole("PLATFORM_ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/organization/hospitals/{id}/location")
+                                .hasRole("PLATFORM_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/staff").hasAnyRole("PLATFORM_ADMIN", "HOSPITAL_MANAGER")
+                        .requestMatchers(HttpMethod.POST, "/api/staff/{id}/deactivate", "/api/staff/{id}/activate")
+                                .hasAnyRole("PLATFORM_ADMIN", "HOSPITAL_MANAGER")
+                        .requestMatchers(HttpMethod.GET, "/api/ministry/availability").hasRole("MINISTRY_OFFICER")
                         .requestMatchers(HttpMethod.POST, "/api/organization/departments",
                                 "/api/equipment").hasRole("HOSPITAL_MANAGER")
                         .requestMatchers(HttpMethod.PATCH, "/api/equipment/{id}/status")
@@ -54,8 +62,9 @@ public class SecurityConfig {
                                 .hasRole("MAINTENANCE_TECHNICIAN")
                         .requestMatchers(HttpMethod.POST, "/api/work-orders/{id}/verify", "/api/work-orders/{id}/reject")
                                 .hasRole("HOSPITAL_MANAGER")
-                        .requestMatchers(HttpMethod.GET, "/api/work-orders", "/api/work-orders/{id}",
-                                "/api/equipment/{id}", "/api/equipment/{id}/history")
+                        .requestMatchers(HttpMethod.GET, "/api/work-orders", "/api/work-orders/queue",
+                                "/api/work-orders/{id}", "/api/equipment", "/api/equipment/{id}",
+                                "/api/equipment/{id}/history")
                                 .hasAnyRole("HOSPITAL_MANAGER", "RADIOLOGY_OPERATOR", "MAINTENANCE_TECHNICIAN")
                         .requestMatchers(HttpMethod.GET, "/api/organization/departments/{id}",
                                 "/api/organization/hospitals/{id}/departments")
@@ -73,7 +82,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.stream(allowedOrigins.split(","))
                 .map(String::strip).filter(origin -> !origin.isEmpty()).toList());
         configuration.setAllowedMethods(List.of("GET", "POST", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Last-Event-ID"));
         configuration.setExposedHeaders(List.of("Location"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", configuration);
