@@ -17,7 +17,7 @@ With the backend running at its default port:
 If you run the backend with Docker, rebuild it after pulling this change:
 
 ```powershell
-docker compose up -d --build backend
+docker compose up -d --build gateway
 ```
 
 For a backend running through Gradle, restart `bootRun`. The documentation routes are public; protected application operations still require their existing roles and organizational assignments. Only application paths under `/api/**` are included in the generated specification.

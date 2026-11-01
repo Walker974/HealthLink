@@ -3,6 +3,7 @@ package ma.aui.csc.monolith.healthlink.maintenance.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import ma.aui.csc.monolith.healthlink.common.data.PageResponse;
+import ma.aui.csc.monolith.healthlink.maintenance.data.entity.WorkOrderStatus;
 import ma.aui.csc.monolith.healthlink.maintenance.service.WorkOrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.*;
@@ -51,6 +52,15 @@ public class WorkOrderController {
     public PageResponse<WorkOrderResponse> list(@RequestParam Long equipmentId,
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         return service.list(equipmentId, page, size);
+    }
+
+    @GetMapping("/queue")
+    @Operation(summary = "Your hospital's repair queue", description = "Hospital staff. Unverified work orders "
+            + "of your own hospital, oldest first; radiology operators only see their department. "
+            + "Optional status filter. Page is zero-based; size must be 1–100.")
+    public PageResponse<WorkOrderResponse> queue(@RequestParam(required = false) WorkOrderStatus status,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return service.queue(status, page, size);
     }
 
     @PostMapping("/{id}/accept")

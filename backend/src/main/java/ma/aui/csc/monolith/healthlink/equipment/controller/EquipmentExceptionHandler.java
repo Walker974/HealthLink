@@ -13,14 +13,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  *
  * The message is generic on purpose: no database details leak to the client (CWE-209).
  */
-@RestControllerAdvice(assignableTypes = EquipmentController.class)
+@RestControllerAdvice(assignableTypes = {EquipmentController.class, ImagingTypeController.class})
 public class EquipmentExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ProblemDetail handleConflict(DataIntegrityViolationException exception) {
         return ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT,
-                "The equipment conflicts with existing data (for example, a duplicate serial number)."
+                "The equipment conflicts with existing data (for example, a duplicate serial number or imaging type code)."
         );
     }
 }

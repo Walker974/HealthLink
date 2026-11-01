@@ -1,6 +1,8 @@
 package ma.aui.csc.monolith.healthlink.maintenance.service;
 
+import java.util.EnumSet;
 import java.util.Objects;
+import java.util.Set;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ import ma.aui.csc.monolith.healthlink.maintenance.data.repository.WorkOrderRepos
 import ma.aui.csc.monolith.healthlink.staff.data.entity.*;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -128,6 +131,34 @@ public class WorkOrderService {
         Equipment equipment = equipmentRepository.findById(equipmentId).orElseThrow(() -> notFound("Equipment"));
         staffAccess.requireEquipmentAccess(equipment);
         return PageResponse.from(repository.findByEquipment_Id(equipmentId, pageable).map(mapper::toResponse));
+    }
+
+    /**
+     * The repair queue of the caller's hospital. Without a status filter it returns every order
+     * that is not verified yet (open, in progress, awaiting verification), oldest first, so the
+     * longest-waiting repair is at the top. Radiology operators only see their own department.
+     */
+    @PreAuthorize("hasAnyRole('HOSPITAL_MANAGER', 'RADIOLOGY_OPERATOR', 'MAINTENANCE_TECHNICIAN')")
+    public PageResponse<WorkOrderResponse> queue(WorkOrderStatus status, int page, int size) {
+        var pageable = PageRequests.of(page, size, Sort.by("reportedAt", "id").ascending());
+        StaffMember staff = staffAccess.currentStaff();
+        if (staff.getHospital() == null) {
+            throw new AccessDeniedException("A hospital assignment is required");
+        }
+        staffAccess.requireHospitalStaff(staff.getHospital().getId());
+        Long departmentId = null;
+        if (staff.getRole() == StaffRole.RADIOLOGY_OPERATOR) {
+            if (staff.getDepartment() == null) {
+                throw new AccessDeniedException("Operators need a department assignment");
+            }
+            departmentId = staff.getDepartment().getId();
+        }
+        Set<WorkOrderStatus> statuses = status == null
+                ? EnumSet.complementOf(EnumSet.of(WorkOrderStatus.VERIFIED))
+                : EnumSet.of(status);
+        return PageResponse.from(repository
+                .findQueue(staff.getHospital().getId(), departmentId, statuses, pageable)
+                .map(mapper::toResponse));
     }
 
     private WorkOrderResponse finish(WorkOrder order, StaffMember actor, AuditAction action,

@@ -14,7 +14,8 @@ public class EquipmentEvents {
     public void statusChanged(Equipment equipment, EquipmentStatus previousStatus) {
         if (previousStatus != equipment.getStatus()) {
             publisher.publishEvent(new EquipmentStatusChanged(equipment.getId(), previousStatus,
-                    equipment.getStatus(), equipment.getStatusUpdatedAt()));
+                    equipment.getStatus(), equipment.getStatusUpdatedAt(),
+                    equipment.getDepartment().getHospital().getId(), equipment.getImagingType().getCode()));
         }
     }
 }

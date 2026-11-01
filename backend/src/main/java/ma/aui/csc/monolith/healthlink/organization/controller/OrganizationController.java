@@ -110,6 +110,26 @@ public class OrganizationController {
         return service.getHospital(hospitalId);
     }
 
+    @PatchMapping("/hospitals/{hospitalId}/location")
+    @Operation(summary = "Record a hospital's location",
+            description = "Requires PLATFORM_ADMIN. Sets WGS 84 coordinates so the hospital appears in "
+                    + "nearby availability searches. Both latitude and longitude are required.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Location recorded"),
+            @ApiResponse(responseCode = "400", ref = "#/components/responses/BadRequest"),
+            @ApiResponse(responseCode = "401", ref = "#/components/responses/Unauthorized"),
+            @ApiResponse(responseCode = "403", ref = "#/components/responses/Forbidden"),
+            @ApiResponse(responseCode = "404", ref = "#/components/responses/NotFound"),
+            @ApiResponse(responseCode = "409", ref = "#/components/responses/Conflict")
+    })
+    public HospitalResponse updateHospitalLocation(
+            @PathVariable Long hospitalId,
+            @Valid @RequestBody UpdateHospitalLocationRequest request
+    ) {
+        return service.updateHospitalLocation(hospitalId, request);
+    }
+
     @GetMapping("/regions/{regionId}/hospitals")
     @Operation(summary = "List hospitals in a region", description = "Public reference data, ordered by ID.")
     @ApiResponses({
