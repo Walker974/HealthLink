@@ -1,6 +1,8 @@
 package ma.aui.csc.monolith.healthlink.organization.data;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -59,7 +61,26 @@ public final class OrganizationDtos {
             @NotNull
             @Positive
             @Schema(description = "ID of an existing region", example = "1")
-            Long regionId
+            Long regionId,
+
+            @DecimalMin("-90") @DecimalMax("90")
+            @Schema(description = "Optional WGS 84 latitude; provide it together with longitude", example = "34.0331")
+            Double latitude,
+
+            @DecimalMin("-180") @DecimalMax("180")
+            @Schema(description = "Optional WGS 84 longitude; provide it together with latitude", example = "-5.0003")
+            Double longitude
+    ) {
+    }
+
+    public record UpdateHospitalLocationRequest(
+            @NotNull @DecimalMin("-90") @DecimalMax("90")
+            @Schema(description = "WGS 84 latitude", example = "34.0331")
+            Double latitude,
+
+            @NotNull @DecimalMin("-180") @DecimalMax("180")
+            @Schema(description = "WGS 84 longitude", example = "-5.0003")
+            Double longitude
     ) {
     }
 
@@ -98,7 +119,11 @@ public final class OrganizationDtos {
             String name,
             String city,
             String address,
-            Long regionId
+            Long regionId,
+            @Schema(description = "WGS 84 latitude, or null when the location is not recorded yet")
+            Double latitude,
+            @Schema(description = "WGS 84 longitude, or null when the location is not recorded yet")
+            Double longitude
     ) {
     }
 

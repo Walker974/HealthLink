@@ -2,7 +2,13 @@ package ma.aui.csc.monolith.healthlink.equipment.service;
 
 import java.util.List;
 
+import ma.aui.csc.monolith.healthlink.common.data.PageRequests;
+import ma.aui.csc.monolith.healthlink.common.data.PageResponse;
 import ma.aui.csc.monolith.healthlink.common.security.StaffAccess;
+import ma.aui.csc.monolith.healthlink.staff.data.entity.StaffMember;
+import ma.aui.csc.monolith.healthlink.staff.data.entity.StaffRole;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import ma.aui.csc.monolith.healthlink.equipment.data.EquipmentDtos.EquipmentResponse;
 import ma.aui.csc.monolith.healthlink.equipment.data.EquipmentDtos.RegisterEquipmentRequest;
 import ma.aui.csc.monolith.healthlink.equipment.data.EquipmentDtos.ChangeStatusRequest;
@@ -106,6 +112,37 @@ public class EquipmentService {
         Equipment equipment = equipmentRepository.findById(equipmentId).orElseThrow(() -> notFound("Equipment"));
         staffAccess.requireEquipmentAccess(equipment);
         return mapper.toResponse(equipment);
+    }
+
+    /**
+     * Staff inventory. Managers and technicians see their own hospital; radiology operators
+     * see only their own department. Asking for another hospital or department returns 403.
+     */
+    @PreAuthorize("hasAnyRole('HOSPITAL_MANAGER', 'RADIOLOGY_OPERATOR', 'MAINTENANCE_TECHNICIAN')")
+    public PageResponse<EquipmentResponse> list(Long hospitalId, Long departmentId, EquipmentStatus status,
+                                                int page, int size) {
+        var pageable = PageRequests.of(page, size, Sort.by("id").ascending());
+        StaffMember staff = staffAccess.currentStaff();
+        if (staff.getHospital() == null) {
+            throw new AccessDeniedException("A hospital assignment is required");
+        }
+        Long ownHospital = staff.getHospital().getId();
+        if (hospitalId != null && !hospitalId.equals(ownHospital)) {
+            throw new AccessDeniedException("Equipment of other hospitals is not accessible");
+        }
+        Long scopedDepartment = departmentId;
+        if (staff.getRole() == StaffRole.RADIOLOGY_OPERATOR) {
+            Long ownDepartment = staff.getDepartment() == null ? null : staff.getDepartment().getId();
+            if (ownDepartment == null || (departmentId != null && !departmentId.equals(ownDepartment))) {
+                throw new AccessDeniedException("Operators can only list their own department");
+            }
+            scopedDepartment = ownDepartment;
+        }
+        // Re-checks that the assignment itself is valid (active hospital, matching role).
+        staffAccess.requireHospitalStaff(ownHospital);
+        return PageResponse.from(equipmentRepository
+                .findInventory(ownHospital, scopedDepartment, status, pageable)
+                .map(mapper::toResponse));
     }
 
     public List<EquipmentResponse> findAvailable(String imagingTypeCode, String city) {

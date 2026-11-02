@@ -13,7 +13,11 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.jdbc.datasource.SingleConnectionDataSource;
+import ma.aui.csc.monolith.healthlink.availability.data.AvailabilityDtos.NearbyHospitalResponse;
+import ma.aui.csc.monolith.healthlink.availability.data.repository.NearbyAvailabilityQuery;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
 import static org.assertj.core.api.Assertions.*;
 
@@ -48,7 +52,7 @@ class PostgresMigrationTests {
 
     @Test
     void freshMigrationsEnforceSingleOpenOrderAndAppendOnlyHistory() throws Exception {
-        assertThat(flyway(false).migrate().migrationsExecuted).isEqualTo(2);
+        assertThat(flyway(false).migrate().migrationsExecuted).isEqualTo(3);
         try (var connection = connection(); var statement = connection.createStatement()) {
             statement.execute("INSERT INTO regions(id, code, name) VALUES (1, 'DEMO', 'Demo region')");
             statement.execute("INSERT INTO hospitals(id, code, name, city, address, region_id) VALUES (1, 'DEMO', 'Demo hospital', 'Fes', 'Demo', 1)");
@@ -89,6 +93,49 @@ class PostgresMigrationTests {
     }
 
     @Test
+    void nearbySearchRanksWorkingServicesByPostgisDistance() throws Exception {
+        flyway(false).migrate();
+        var single = new SingleConnectionDataSource(System.getenv("HEALTHLINK_POSTGRES_TEST_URL"),
+                System.getenv("HEALTHLINK_POSTGRES_TEST_USER"), System.getenv("HEALTHLINK_POSTGRES_TEST_PASSWORD"), true);
+        try {
+            try (var statement = single.getConnection().createStatement()) {
+                // PostGIS functions live in the public schema; the test tables live in the isolated schema.
+                statement.execute("SET search_path TO " + schema + ", public");
+                statement.execute("INSERT INTO regions(id, code, name) VALUES (1, 'DEMO', 'Demo region')");
+                statement.execute("INSERT INTO hospitals(id, code, name, city, address, region_id, latitude, longitude) VALUES "
+                        + "(1, 'RABAT', 'Rabat demo', 'Rabat', 'Demo', 1, 34.02, -6.84),"
+                        + "(2, 'FES', 'Fes demo', 'Fes', 'Demo', 1, 34.03, -5.00),"
+                        + "(3, 'CASA', 'Casablanca demo', 'Casablanca', 'Demo', 1, 33.57, -7.59),"
+                        + "(4, 'NOWHERE', 'No location yet', 'Rabat', 'Demo', 1, NULL, NULL)");
+                statement.execute("INSERT INTO departments(id, code, name, hospital_id) VALUES "
+                        + "(1, 'RAD', 'Radiology', 1), (2, 'RAD', 'Radiology', 2), (3, 'RAD', 'Radiology', 3), (4, 'RAD', 'Radiology', 4)");
+                statement.execute("INSERT INTO imaging_types(id, code, name) VALUES (1, 'MRI', 'MRI'), (2, 'CT', 'CT')");
+                statement.execute("INSERT INTO equipment(id, serial_number, model, status, status_updated_at, department_id, imaging_type_id) VALUES "
+                        + "(1, 'R1', 'Demo', 'AVAILABLE', CURRENT_TIMESTAMP, 1, 1),"
+                        + "(2, 'F1', 'Demo', 'AVAILABLE', CURRENT_TIMESTAMP, 2, 1),"
+                        + "(3, 'F2', 'Demo', 'AVAILABLE', CURRENT_TIMESTAMP, 2, 1),"
+                        + "(4, 'C1', 'Demo', 'OUT_OF_SERVICE', CURRENT_TIMESTAMP, 3, 1),"
+                        + "(5, 'N1', 'Demo', 'AVAILABLE', CURRENT_TIMESTAMP, 4, 1),"
+                        + "(6, 'C2', 'Demo', 'AVAILABLE', CURRENT_TIMESTAMP, 3, 2)");
+            }
+            var query = new NearbyAvailabilityQuery(new JdbcTemplate(single));
+
+            var withinWideRadius = query.find("MRI", 34.00, -6.85, 300_000, 10);
+            assertThat(withinWideRadius).extracting(NearbyHospitalResponse::hospitalId).containsExactly(1L, 2L);
+            assertThat(withinWideRadius.get(0).distanceKm()).isLessThan(5);
+            assertThat(withinWideRadius.get(1).distanceKm()).isBetween(150.0, 200.0);
+            assertThat(withinWideRadius.get(1).availableCount()).isEqualTo(2);
+
+            assertThat(query.find("MRI", 34.00, -6.85, 50_000, 10))
+                    .extracting(NearbyHospitalResponse::hospitalId).containsExactly(1L);
+            assertThat(query.find("CT", 34.00, -6.85, 300_000, 10))
+                    .extracting(NearbyHospitalResponse::hospitalId).containsExactly(3L);
+        } finally {
+            single.destroy();
+        }
+    }
+
+    @Test
     void baseliningPreservesLegacyDataAndAddsVersions() throws Exception {
         try (var connection = connection()) {
             ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/postgresql/V1__original_schema.sql"));
@@ -96,7 +143,7 @@ class PostgresMigrationTests {
                 statement.execute("INSERT INTO regions(id, code, name) VALUES (111, 'LEGACY', 'Preserved region')");
             }
         }
-        assertThat(flyway(true).migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(flyway(true).migrate().migrationsExecuted).isEqualTo(2);
         try (var connection = connection(); var statement = connection.createStatement();
              var result = statement.executeQuery("SELECT name, version FROM regions WHERE id = 111")) {
             assertThat(result.next()).isTrue();

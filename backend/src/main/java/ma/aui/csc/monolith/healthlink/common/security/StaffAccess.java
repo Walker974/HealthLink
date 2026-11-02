@@ -38,6 +38,21 @@ public class StaffAccess {
         return staff;
     }
 
+    /** True when the authenticated token carries this realm role (no local profile needed). */
+    public boolean hasRole(StaffRole role) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.isAuthenticated() && authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_" + role.name()));
+    }
+
+    public StaffMember requireRole(StaffRole role) {
+        StaffMember staff = currentStaff();
+        if (staff.getRole() != role) {
+            throw denied();
+        }
+        return staff;
+    }
+
     public StaffMember requireHospitalManager(Long hospitalId) {
         return requireHospitalRole(hospitalId, StaffRole.HOSPITAL_MANAGER);
     }
