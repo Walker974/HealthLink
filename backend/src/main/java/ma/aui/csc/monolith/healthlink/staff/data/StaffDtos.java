@@ -27,5 +27,7 @@ public final class StaffDtos {
             @Positive Long departmentId) {}
 
     public record StaffResponse(Long id, String keycloakSubject, String fullName,
-                                String email, StaffRole role, Long hospitalId, Long departmentId) {}
+                                String email, StaffRole role, Long hospitalId, Long departmentId,
+                                @Schema(description = "False after deactivation; inactive staff cannot use staff operations")
+                                boolean active) {}
 }

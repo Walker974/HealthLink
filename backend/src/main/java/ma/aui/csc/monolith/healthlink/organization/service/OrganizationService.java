@@ -59,16 +59,36 @@ public class OrganizationService {
         Region region = regionRepository.findById(request.regionId())
                 .orElseThrow(() -> notFound("Region"));
 
+        if ((request.latitude() == null) != (request.longitude() == null)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Provide both latitude and longitude, or neither");
+        }
         Hospital hospital = new Hospital(
                 request.code(),
                 request.name().strip(),
                 request.city().strip(),
                 request.address().strip(),
-                region
+                region,
+                request.latitude(),
+                request.longitude()
         );
 
         Hospital saved = hospitalRepository.saveAndFlush(hospital);
         return mapper.toResponse(saved);
+    }
+
+    /** Records or corrects a hospital's coordinates so it appears in nearby searches. */
+    @Transactional
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    public HospitalResponse updateHospitalLocation(
+            Long hospitalId,
+            @NotNull @Valid UpdateHospitalLocationRequest request
+    ) {
+        Hospital hospital = hospitalRepository.findById(hospitalId)
+                .filter(Hospital::isActive)
+                .orElseThrow(() -> notFound("Hospital"));
+        hospital.relocate(request.latitude(), request.longitude());
+        return mapper.toResponse(hospitalRepository.saveAndFlush(hospital));
     }
 
     @Transactional
