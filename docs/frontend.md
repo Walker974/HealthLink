@@ -62,6 +62,8 @@ The installed stack includes React, TypeScript, Vite, Tailwind CSS, shadcn/ui (R
 
 ## Run the whole application
 
+For real API data with sample mode disabled, follow the [live-mode setup and onboarding guide](live-mode.md).
+
 Run from the repository root, with your existing `.env` and Docker Desktop's Linux engine:
 
 ```powershell
