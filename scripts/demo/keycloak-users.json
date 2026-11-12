@@ -1,0 +1,105 @@
+{
+  "ifResourceExists": "SKIP",
+  "users": [
+    {
+      "id": "5d1c7e2a-0000-4000-8000-000000000001",
+      "username": "manager",
+      "firstName": "Meryem",
+      "lastName": "Amrani",
+      "email": "manager@healthlink.test",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo-2026",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "HOSPITAL_MANAGER"
+      ]
+    },
+    {
+      "id": "5d1c7e2a-0000-4000-8000-000000000002",
+      "username": "operator",
+      "firstName": "Salma",
+      "lastName": "Bennani",
+      "email": "operator@healthlink.test",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo-2026",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "RADIOLOGY_OPERATOR"
+      ]
+    },
+    {
+      "id": "5d1c7e2a-0000-4000-8000-000000000003",
+      "username": "technician",
+      "firstName": "Youssef",
+      "lastName": "Alaoui",
+      "email": "technician@healthlink.test",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo-2026",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "MAINTENANCE_TECHNICIAN"
+      ]
+    },
+    {
+      "id": "5d1c7e2a-0000-4000-8000-000000000004",
+      "username": "ministry",
+      "firstName": "Nour",
+      "lastName": "Benali",
+      "email": "ministry@healthlink.test",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo-2026",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "MINISTRY_OFFICER"
+      ]
+    },
+    {
+      "id": "5d1c7e2a-0000-4000-8000-000000000005",
+      "username": "admin",
+      "firstName": "Amine",
+      "lastName": "El Idrissi",
+      "email": "admin@healthlink.test",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo-2026",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "PLATFORM_ADMIN"
+      ]
+    }
+  ]
+}
